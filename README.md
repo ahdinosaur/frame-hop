@@ -5,28 +5,33 @@ Cuts a stream of floating point frames into a stream of partially overlapping fr
 ## Example
 
 ```javascript
-//Create frame slicer
-var slicer = require("frame-hop")(256, 64, function(frame) {
-  console.log("Got a frame!", frame)
-})
+// Create frame slicer
+var frameHop = require('frame-hop')
+var stdout = require('stdout')
 
-//Add frames to slices by calling slicer:
-slicer(data)
+var slicer = frameHop({
+  frameSize: 256,
+  hopSize: 64,
+}.pipe(stdout())
+
+// Add frames to slices by calling .write:
+slicer.write(data)
+
+// Or pipe another stream into slicer...
 ```
 
 ## Install
 
     npm install frame-hop
 
-#### `require("frame-hop")(frame_size, hop_size, ondata[, max_data_size])`
+#### `require('frame-hop')(opts)`
 Creates a windowed frame slicer
 
-* `frame_size` is the size of an output frame
-* `hop_size` is the amount of hopping between frames
-* `ondata(frame)` is a callback that executed once per each frame that is sliced
-* `max_data_size` is the maximum amount of data per input frame (default `frame_size`)
+* `opts.frameSize` is the size of an output frame
+* `opts.hopSize` is the amount of hopping between frames
+* `opts.maxDataSize` is the maximum amount of data per input frame (default `opts.frameSize`)
 
-**Returns** A function `slicer(data)` which adds some amount of data to the rolling frame buffer.
+**Returns** A `Transform` stream which if written to adds data to the rolling frame buffer to be read.
 
 ## Credits
 (c) 2013 Mikola Lysenko. MIT License

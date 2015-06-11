@@ -1,10 +1,12 @@
 "use strict"
 
+var through = require('through2')
+
 var frameHop = require("../hop.js")
 
 require("tape")("frame-hop unaligned", function(t) {
   
-  var expected_frames = [
+  var expectedFrames = [
     [0,1,2,3,4,5,6],
     [3,4,5,6,7,8,9],
     [6,7,8,9,10,11,12],
@@ -12,15 +14,23 @@ require("tape")("frame-hop unaligned", function(t) {
     [12,13,14,15,16,17,18],
     [15,16,17,18,19,20,21]
   ]
+
+  t.plan(expectedFrames.length)
   
-  var slicer = frameHop(7, 3, function(x) {
-    var f = expected_frames[0]
-    expected_frames.shift()
-    t.same(f, Array.prototype.slice.call(x, 0))
+  var slicer = frameHop({
+    frameSize: 7,
+    hopSize: 3
   })
   
+  slicer.pipe(through.obj(function (x, enc, cb) {
+    var f = expectedFrames[0]
+    expectedFrames.shift()
+    t.same(Array.prototype.slice.call(x, 0), f)
+    cb()
+  }))
+  
   function pushData(arr) {
-    slicer(new Float32Array(arr))
+    slicer.write(new Float32Array(arr))
   }
   
   pushData([0,1,2])
@@ -28,17 +38,11 @@ require("tape")("frame-hop unaligned", function(t) {
   pushData([5,6,7,8,9,10,11])
   pushData([12,13])
   pushData([14,15,16,17,18,19,20,21])
-  
-  t.equals(expected_frames.length, 0)
-  
-  t.end()
 })
-
-
 
 require("tape")("frame-hop aligned", function(t) {
   
-  var expected_frames = [
+  var expectedFrames = [
     [0,1,2,3],
     [2,3,4,5],
     [4,5,6,7],
@@ -51,14 +55,23 @@ require("tape")("frame-hop aligned", function(t) {
     [18,19,20,21]
   ]
   
-  var slicer = frameHop(4, 2, function(x) {
-    var f = expected_frames[0]
-    expected_frames.shift()
-    t.same(f, Array.prototype.slice.call(x, 0))
-  }, 8)
+  t.plan(expectedFrames.length)
   
+  var slicer = frameHop({
+    frameSize: 4,
+    hopSize: 2,
+    maxDataSize: 8
+  })
+  
+  slicer.pipe(through.obj(function (x, enc, cb) {
+    var f = expectedFrames[0]
+    expectedFrames.shift()
+    t.same(Array.prototype.slice.call(x, 0), f)
+    cb()
+  }))
+
   function pushData(arr) {
-    slicer(new Float32Array(arr))
+    slicer.write(new Float32Array(arr))
   }
   
   pushData([0,1,2])
@@ -66,8 +79,4 @@ require("tape")("frame-hop aligned", function(t) {
   pushData([5,6,7,8,9,10,11])
   pushData([12,13])
   pushData([14,15,16,17,18,19,20,21])
-  
-  t.equals(expected_frames.length, 0)
-  
-  t.end()
 })
